@@ -21,6 +21,7 @@ import com.servlet.exception.StudentUpdateException;
 import com.servlet.provider.PostgresConnectionProvider;
 import com.servlet.repository.StudentRepository;
 import com.servlet.service.StudentService;
+import com.servlet.utils.JsonUtils;
 
 @WebServlet("/students/*")
 public class Servlet extends HttpServlet {
@@ -28,7 +29,7 @@ public class Servlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     private final StudentService studentService;
-    private final Gson gson;
+    private final JsonUtils jsonUtils;
     private Logger logger = Logger.getLogger(Servlet.class.getName());
 
     public Servlet() throws ClassNotFoundException {
@@ -40,7 +41,7 @@ public class Servlet extends HttpServlet {
         StudentRepository repo = new StudentRepository(provider);
 
         this.studentService = new StudentService(repo);
-        this.gson = new Gson();
+        this.jsonUtils = new JsonUtils();
     }
 
     @Override
@@ -58,7 +59,7 @@ public class Servlet extends HttpServlet {
         String path = request.getPathInfo();
         if (path == null || path.equals("/")) {
             Collection<Student> students = this.studentService.getAll();
-            String body = gson.toJson(students);
+            String body = jsonUtils.toJson(students);
 
             response.getWriter()
                 .append(body);
@@ -70,7 +71,7 @@ public class Servlet extends HttpServlet {
             Student student = this.studentService.get(id);;
 
             response.getWriter()
-                .append(gson.toJson(student));
+                .append(jsonUtils.toJson(student));
             return;
         } catch (IllegalArgumentException | StudentNotFoundException e) {
             e.printStackTrace();
@@ -90,12 +91,12 @@ public class Servlet extends HttpServlet {
         }
 
         try {
-            Student student = this.gson.fromJson(request.getReader(), Student.class);
+            Student student = this.jsonUtils.fromJson(request.getReader().toString(), Student.class);
             this.studentService.add(student);
 
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter()
-                .append(gson.toJson(student));
+                .append(jsonUtils.toJson(student));
             return;
         } catch (IllegalArgumentException | StudentCreateException e) {
             e.printStackTrace();
@@ -117,7 +118,7 @@ public class Servlet extends HttpServlet {
         try {
             UUID id = UUID.fromString(request.getPathInfo()
                 .replace("/", ""));
-            Student student = this.gson.fromJson(request.getReader(), Student.class);
+            Student student = jsonUtils.fromJson(request.getReader(), Student.class);
 
             student.setId(id);
 
@@ -125,7 +126,7 @@ public class Servlet extends HttpServlet {
 
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter()
-                .append(gson.toJson(student));
+                .append(jsonUtils.toJson(student));
             return;
         } catch (IllegalArgumentException | StudentUpdateException e) {
             e.printStackTrace();

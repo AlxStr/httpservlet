@@ -14,18 +14,21 @@ import com.servlet.entity.Student;
 import com.servlet.provider.SQLConnectionProvider;
 
 public class StudentRepository {
-
-    private final SQLConnectionProvider connectionProvider;
+    private Connection conn = null;
 
     public StudentRepository(SQLConnectionProvider connectionProvider) {
-        this.connectionProvider = connectionProvider;
+
+        try {
+            this.conn = connectionProvider.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public List<Student> all() {
         List<Student> students = new ArrayList<Student>();
 
         try {
-            Connection conn = connectionProvider.getConnection();
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT * FROM students");
 
@@ -34,9 +37,7 @@ public class StudentRepository {
             }
 
             rs.close();
-            conn.close();
             stmt.close();
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -46,7 +47,6 @@ public class StudentRepository {
 
     public Optional<Student> get(UUID id) {
         try {
-            Connection conn = connectionProvider.getConnection();
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM students WHERE id = ?::uuid");
             stmt.setString(1, id.toString());
 
@@ -57,8 +57,6 @@ public class StudentRepository {
                 Student student = entryToStudent(rs);
                 return Optional.of(student);
             }
-
-            conn.close();
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -69,7 +67,6 @@ public class StudentRepository {
 
     public void save(Student student) {
         try {
-            Connection conn = connectionProvider.getConnection();
             PreparedStatement stmt = conn.prepareStatement("INSERT INTO students VALUES (?::uuid, ?, ?, ?)");
             stmt.setString(1, student.getId()
                 .toString());
@@ -78,8 +75,6 @@ public class StudentRepository {
             stmt.setString(4, student.getMiddleName());
 
             stmt.execute();
-
-            conn.close();
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -88,7 +83,6 @@ public class StudentRepository {
 
     public void update(Student student) {
         try {
-            Connection conn = connectionProvider.getConnection();
             PreparedStatement stmt = conn
                 .prepareStatement("UPDATE students SET first_name=?, last_name=?, middle_name=? where id=?::uuid");
             stmt.setString(1, student.getFirstName());
@@ -98,8 +92,6 @@ public class StudentRepository {
                 .toString());
 
             stmt.execute();
-
-            conn.close();
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -108,14 +100,12 @@ public class StudentRepository {
 
     public void remove(Student student) {
         try {
-            Connection conn = connectionProvider.getConnection();
             PreparedStatement stmt = conn.prepareStatement("DELETE FROM students WHERE id = ?::uuid");
             stmt.setString(1, student.getId()
                 .toString());
 
             stmt.execute();
 
-            conn.close();
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
